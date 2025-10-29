@@ -1,0 +1,6 @@
+﻿<%@ ServiceHost 
+    Language="C#" 
+    Debug="true" 
+    Service="Figures_game_trading01.dbService" 
+    CodeBehind="dbService.svc.cs" 
+    Factory="System.ServiceModel.Activation.WebServiceHostFactory" %>

@@ -1,0 +1,313 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Figure Shop</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#loggedInNavbar" aria-controls="loggedInNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="loggedInNavbar">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="AddProduct.html">Add Product</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="Catalogs.html">Catalogs</a>
+                    </li>
+                    <li class="nav-item" id="navManageProduct">
+                        <a class="nav-link" href="Admin.html">Manage Product</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="history.html">Profile (ประวัติการซื้อ)</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="HomePage.html">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+
+    <main class="container my-4">
+        <h2 class="mb-3">Manage Products</h2>
+
+        <!-- Toolbar -->
+        <div class="mb-3 d-flex gap-2">
+            <input id="q" class="form-control" placeholder="ค้นหาชื่อสินค้า...">
+            <button id="btnRefresh" class="btn btn-outline-secondary">Search</button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th style="width:92px">รูป</th>
+                        <th>ชื่อ</th>
+                        <th class="text-end">เริ่มต้น</th>
+                        <th class="text-end">ราคาปัจจุบัน</th>
+                        <th>สถานะ</th>
+                        <th>สิ้นสุด</th>
+                        <th class="text-end">เหลือเวลา</th>
+                        <th style="width:210px"></th>
+                    </tr>
+                </thead>
+                <tbody id="tb"></tbody>
+            </table>
+        </div>
+
+
+        <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable">
+                <form class="modal-content" id="editForm">
+                    <div class="modal-header">
+                        <h2 class="mb-3">Edit Product</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="edit_item_id">
+                        <div class="mb-2">
+                            <label class="form-label">ชื่อสินค้า</label>
+                            <input class="form-control" id="edit_name" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">ราคาเริ่มต้น (฿)</label>
+                            <input type="number" step="0.01" class="form-control" id="edit_price" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">รูปภาพ (URL หลายรูปคั่นด้วย | )</label>
+                            <input class="form-control" id="edit_imgs" placeholder="https://...|https://...">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">สถานะ</label>
+                            <select class="form-select" id="edit_status">
+                                <option value="active">active</option>
+                                <option value="ended">ended</option>
+                                <option value="sold">sold</option>
+                                <option value="archived">archived</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">เวลาสิ้นสุด (UTC ISO หรือ เว้นว่างถ้าไม่เปลี่ยน)</label>
+                            <input class="form-control" id="edit_ends_at" placeholder="2025-10-31T15:30:00">
+                            <div class="form-text">ปล่อยว่างถ้าไม่แก้ไขเวลาสิ้นสุด</div>
+                        </div>
+                        <div class="alert alert-warning d-none" id="editWarn"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">ยกเลิก</button>
+                        <button class="btn btn-primary" type="submit">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+
+    <!-- ต้องมีตัวนี้ (bundle รวม Popper แล้ว) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // เฉพาะแอดมิน
+            const role = (localStorage.getItem('role') || '').toLowerCase();
+            if (role !== 'admin') { location.href = 'Catalogs.html'; return; }
+
+            const API = new URL('../Services/dbService.svc', location.href).href;
+            const tb = document.getElementById('tb');
+            const q = document.getElementById('q');
+
+            const fmtMoney = n => Number(n || 0).toLocaleString();
+            const fmtRemain = sec => {
+                sec = Math.max(0, Number(sec || 0) | 0);
+                const d = Math.floor(sec / 86400); sec %= 86400;
+                const h = Math.floor(sec / 3600); sec %= 3600;
+                const m = Math.floor(sec / 60); const s = sec % 60;
+                return (d ? `${d}d ` : '') + [h, m, s].map(x => String(x).padStart(2, '0')).join(':');
+            };
+
+            async function getCatalogs() {
+                for (const u of [`${API}/catalog/list-view`, `${API}/GetCatalogListView`]) {
+                    try { const r = await fetch(u); if (r.ok) return await r.json(); } catch (e) { }
+                }
+                throw new Error('ไม่พบ endpoint สำหรับดึงรายการ');
+            }
+
+            function render(rows) {
+                const key = (q.value || '').toLowerCase();
+                const data = rows.filter(r => !key || String(r.name || '').toLowerCase().includes(key));
+
+                tb.innerHTML = data.map(r => {
+                    const img = (r.Img || r.img || 'https://placehold.co/160x120?text=No+Image');
+                    const start = r.price ?? r.price_start ?? 0;
+                    const current = r.current_price ?? Math.max(start, r.top_bid ?? 0);
+                    const ends = (r.ends_at || '').replace('T', ' ');
+                    const remain = r.remaining_seconds ?? 0;
+                    return `
+                <tr data-id="${r.item_id}"
+                    data-name="${(r.name || '').replace(/"/g, '&quot;')}"
+                    data-price="${start}"
+                    data-imgs="${(r.Imgs || r.Img || '').replace(/"/g, '&quot;')}"
+                    data-status="${r.status || ''}"
+                    data-ends="${r.ends_at || ''}">
+                  <td><img src="${img}" class="img-thumbnail" style="width:88px;height:66px;object-fit:cover"></td>
+                  <td>${r.name || '-'}</td>
+                  <td class="text-end">฿${fmtMoney(start)}</td>
+                  <td class="text-end fw-semibold">฿${fmtMoney(current)}</td>
+                  <td><span class="badge ${r.status === 'active' ? 'bg-success' : 'bg-secondary'}">${r.status}</span></td>
+                  <td>${ends || '-'}</td>
+                  <td class="text-end">${fmtRemain(remain)}</td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <a class="btn btn-outline-primary" href="Bidding.html?id=${r.item_id}">ดู</a>
+                      <button class="btn btn-outline-info" data-act="edit">แก้ไข</button>
+                      <button class="btn btn-outline-warning" data-act="close">ปิด</button>
+                      <button class="btn btn-outline-danger"  data-act="del">ลบ</button>
+                    </div>
+                  </td>
+                </tr>`;
+                }).join('');
+            }
+
+            async function load() {
+                document.getElementById('btnRefresh').disabled = true;
+                try { render(await getCatalogs()); }
+                catch (err) { tb.innerHTML = `<tr><td colspan="8" class="text-danger">${err.message}</td></tr>`; }
+                finally { document.getElementById('btnRefresh').disabled = false; }
+            }
+
+            document.getElementById('btnRefresh').onclick = load;
+            q.addEventListener('input', load);
+
+            // Actions
+            tb.addEventListener('click', async e => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const tr = btn.closest('tr');
+                const id = tr?.dataset.id;
+
+                // EDIT
+                if (btn.dataset.act === 'edit') {
+                    document.getElementById('edit_item_id').value = id;
+                    document.getElementById('edit_name').value = tr.dataset.name || '';
+                    document.getElementById('edit_price').value = tr.dataset.price || 0;
+                    document.getElementById('edit_imgs').value = tr.dataset.imgs || '';
+                    document.getElementById('edit_status').value = tr.dataset.status || 'active';
+                    document.getElementById('edit_ends_at').value = tr.dataset.ends || '';
+                    document.getElementById('editWarn').classList.add('d-none');
+                    new bootstrap.Modal(document.getElementById('editModal')).show();
+                    return;
+                }
+
+                // CLOSE
+                if (btn.dataset.act === 'close') {
+                    if (!confirm('ยืนยันปิดการประมูลรายการนี้?')) return;
+                    const ok = await postFirstOk([
+                        `${API}/catalog/close/${id}`,
+                        `${API}/CloseCatalog?id=${id}`
+                    ]);
+                    if (ok) { alert('ปิดการประมูลแล้ว'); load(); }
+                    else alert('ปิดไม่สำเร็จ');
+                    return;
+                }
+
+                // DELETE
+                if (btn.dataset.act === 'del') {
+                    if (!confirm('ยืนยันลบรายการนี้?')) return;
+                    const ok = await postFirstOk([
+                        `${API}/catalog/delete/${id}`,
+                        `${API}/DeleteCatalog?id=${id}`
+                    ]);
+                    if (ok) tr.remove(); else alert('ลบไม่สำเร็จ');
+                    return;
+                }
+            });
+
+            async function postFirstOk(urls, body) {
+                for (const u of urls) {
+                    try {
+                        const r = await fetch(u, {
+                            method: 'POST',
+                            headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                            body: body ? JSON.stringify(body) : undefined
+                        });
+                        const t = (await r.text()).replace(/"/g, '').trim();
+                        if (r.ok && (t === 'success' || t === 'ok')) return true;
+                    } catch (e) { }
+                }
+                return false;
+            }
+
+            // Submit Edit
+            async function postFirstOk(urls, body) {
+                for (const u of urls) {
+                    try {
+                        const r = await fetch(u, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
+                        });
+                        const text = (await r.text()).replace(/"/g, '').trim();
+                        console.log('POST', u, r.status, text); // << ดูสถานะ/ข้อความตอบกลับ
+                        if (r.ok && (text === 'success' || text === 'ok')) return true;
+                    } catch (e) {
+                        console.warn('POST fail', u, e);
+                    }
+                }
+                return false;
+            }
+
+            document.getElementById('editForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const adminEmail = localStorage.getItem('email') || '';
+                if (!adminEmail) { alert('กรุณาเข้าสู่ระบบใหม่'); location.href = 'Login.html'; return; }
+
+                const payload = {
+                    adminEmail,
+                    item_id: Number(document.getElementById('edit_item_id').value),
+                    name: document.getElementById('edit_name').value.trim(),
+                    price: parseFloat(document.getElementById('edit_price').value),
+                    Imgs: document.getElementById('edit_imgs').value.trim(),
+                    status: document.getElementById('edit_status').value,
+                    endsAtISO: (document.getElementById('edit_ends_at').value || undefined)
+                };
+
+                // validation ง่ายๆ
+                if (!payload.name || !(payload.price >= 0)) {
+                    alert('กรุณากรอกชื่อและราคาให้ถูกต้อง'); return;
+                }
+
+                const API = new URL('../Services/dbService.svc', location.href).href;
+                const ok = await postFirstOk(
+                    [`${API}/catalog/update`, `${API}/UpdateCatalog`],
+                    payload
+                );
+
+                if (ok) {
+                    alert('บันทึกสำเร็จ');
+                    bootstrap.Modal.getInstance(document.getElementById('editModal'))?.hide();
+                    document.getElementById('btnRefresh').click(); // reload ตาราง
+                } else {
+                    alert('บันทึกไม่สำเร็จ (ดู Console เพื่อดูรายละเอียด URL/สถานะ)');
+                }
+            });
+
+            // เริ่มงาน
+            load();
+        });
+    </script>
+    
+
+
+</html>

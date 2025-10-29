@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<style>
+    .card-img-fixed {
+        height: 300px;
+        object-fit: cover;
+    }
+</style>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="home.html">Figure Shop</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#loggedInNavbar" aria-controls="loggedInNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="loggedInNavbar">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item" id="navAddProduct">
+                        <a class="nav-link" href="AddProduct.html">Add Product</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="Catalogs.html">Catalogs</a>
+                    </li>
+                    <li class="nav-item" id="navManageProduct">
+                        <a class="nav-link" href="Admin.html">Manage Product</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="history.html">Profile (ประวัติการซื้อ)</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="HomePage.html">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <h2 class="mb-4">Shopping History</h2>
+
+        <div class="row justify-content-center g-3" id="history-container">
+            <div class="col-12 text-center">
+                <p>Loading history...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            // ต้องล็อกอินก่อน
+            const email = localStorage.getItem('email');
+            if (!email) { location.href = 'Login.html'; return; }
+
+            // customer ซ่อน AddProduct
+            const role = (localStorage.getItem('role') || '').toLowerCase();
+            const addLi = document.getElementById('navAddProduct');
+            if (addLi && role !== 'admin') addLi.classList.add('d-none');
+
+            // logout
+            const btnLogout = document.getElementById('btnLogout');
+            if (btnLogout) btnLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.clear();
+                location.href = 'HomePage.html';
+            });
+
+            const API = new URL('../Services/dbService.svc', location.href).href;
+            const box = document.getElementById('history-container');
+
+            fetch(`${API}/history/my-purchases/${encodeURIComponent(email)}`)
+                .then(r => r.json())
+                .then(list => {
+                    box.innerHTML = '';
+                    if (!list || !list.length) {
+                        box.innerHTML = `<div class="col-12">
+              <div class="alert alert-info text-center">ยังไม่มีประวัติ</div>
+            </div>`;
+                        return;
+                    }
+
+                    list.forEach(x => {
+                        const img = x.img || 'https://placehold.co/800x600?text=No+Image';
+                        box.insertAdjacentHTML('beforeend', `
+              <div class="col-lg-4 col-md-6 col-12">
+                <div class="card h-100 shadow-sm">
+                  <img src="${img}" class="card-img-top card-img-fixed" alt="${x.item_name}">
+                  <div class="card-body">
+                    <h5 class="card-title">${x.item_name}</h5>
+                    <p class="mb-1"><strong>ราคาชนะ:</strong> ฿${Number(x.total_amount).toLocaleString()}</p>
+                    <p class="text-muted mb-0"><small>วันที่ซื้อ: ${String(x.purchased_at).replace('T', ' ')}</small></p>
+                  </div>
+                </div>
+              </div>
+            `);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    box.innerHTML = `<div class="col-12"><div class="alert alert-danger text-center">
+            โหลดข้อมูลไม่สำเร็จ</div></div>`;
+                });
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const isAdmin = (localStorage.getItem('role') || '').toLowerCase() === 'admin';
+            ['navAddProduct', 'navManageProduct'].forEach(id => {
+                let el = document.getElementById(id);
+                if (!el) return;
+                const li = el.closest('li');
+                if (li) el = li;
+                el.classList.toggle('d-none', !isAdmin);
+            });
+        });
+    </script>
+</body>
+</html>
