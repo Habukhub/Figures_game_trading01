@@ -76,6 +76,7 @@
     <Content Include="View\AddProduct.html" />
     <Content Include="View\Admin.html" />
     <Content Include="View\Bidding.html" />
+    <Content Include="View\bill.html" />
     <Content Include="View\EditProduct.html" />
     <Content Include="View\History.html" />
     <Content Include="View\HomePage.html" />

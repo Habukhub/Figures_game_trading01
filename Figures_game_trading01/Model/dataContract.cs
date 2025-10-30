@@ -120,6 +120,26 @@ namespace Figures_game_trading01
         public decimal payment_amount;   // ถ้ามี payment
         public string payment_method;    // ถ้ามี payment
         public string seller_name;       // ชื่อผู้ขาย
+        public string bill_url;
+    }
+
+    public class BillView
+    {
+        public int purchase_id;
+        public string purchased_at;     // ISO
+        public decimal total_amount;
+
+        public int item_id;
+        public string item_name;
+        public string img;
+
+        public string seller_name;
+        public string buyer_name;
+        public string buyer_email;
+
+        public string payment_status;   // -, pending, success...
+        public decimal payment_amount;
+        public string payment_method;
     }
 
     public class UpdateCatalogDto

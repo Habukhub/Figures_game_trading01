@@ -80,31 +80,49 @@
                     box.innerHTML = '';
                     if (!list || !list.length) {
                         box.innerHTML = `<div class="col-12">
-              <div class="alert alert-info text-center">ยังไม่มีประวัติ</div>
-            </div>`;
+                  <div class="alert alert-info text-center">ยังไม่มีประวัติ</div>
+                </div>`;
                         return;
                     }
 
                     list.forEach(x => {
                         const img = x.img || 'https://placehold.co/800x600?text=No+Image';
+
+                        // อ้างอิงตัวตนบิล/ออเดอร์
+                        const pid = x.purchase_id ?? x.order_id ?? x.bid_id ?? '';
+
+                        // ถ้ามี URL บิลจาก API ใช้เลย ไม่งั้นส่งไป bill.html พร้อมพารามิเตอร์ (แท็บเดิม)
+                        const billHref = x.bill_url
+                            ? x.bill_url
+                            : `bill.html?pid=${encodeURIComponent(pid)}`
+                            + `&item=${encodeURIComponent(x.item_name)}`
+                            + `&amount=${encodeURIComponent(x.total_amount)}`
+                            + `&date=${encodeURIComponent(String(x.purchased_at))}`;
+
                         box.insertAdjacentHTML('beforeend', `
-              <div class="col-lg-4 col-md-6 col-12">
-                <div class="card h-100 shadow-sm">
-                  <img src="${img}" class="card-img-top card-img-fixed" alt="${x.item_name}">
-                  <div class="card-body">
-                    <h5 class="card-title">${x.item_name}</h5>
-                    <p class="mb-1"><strong>ราคาชนะ:</strong> ฿${Number(x.total_amount).toLocaleString()}</p>
-                    <p class="text-muted mb-0"><small>วันที่ซื้อ: ${String(x.purchased_at).replace('T', ' ')}</small></p>
-                  </div>
-                </div>
-              </div>
-            `);
+    <div class="col-lg-4 col-md-6 col-12">
+      <div class="card h-100 shadow-sm d-flex flex-column">
+        <img src="${img}" class="card-img-top card-img-fixed" alt="${x.item_name}">
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title">${x.item_name}</h5>
+          <p class="mb-1"><strong>ราคาชนะ:</strong> ฿${Number(x.total_amount).toLocaleString()}</p>
+          <p class="text-muted mb-3"><small>วันที่ซื้อ: ${String(x.purchased_at).replace('T', ' ')}</small></p>
+
+          <!-- ปุ่ม Bill ไปแท็บเดิม -->
+          <a class="btn btn-outline-primary mt-auto w-100 btn-bill" href="${billHref}">
+            Bill / ใบเสร็จ
+          </a>
+        </div>
+      </div>
+    </div>
+  `);
                     });
+
                 })
                 .catch(err => {
                     console.error(err);
                     box.innerHTML = `<div class="col-12"><div class="alert alert-danger text-center">
-            โหลดข้อมูลไม่สำเร็จ</div></div>`;
+                โหลดข้อมูลไม่สำเร็จ</div></div>`;
                 });
         })();
 

@@ -95,6 +95,13 @@ namespace Figures_game_trading01
         Figures_game_trading01.PurchaseView[] GetMyPurchases(string email);
 
 
+        // Bill
+        [OperationContract]
+        [WebInvoke(Method = "GET",
+         ResponseFormat = WebMessageFormat.Json,
+         BodyStyle = WebMessageBodyStyle.Bare,
+         UriTemplate = "history/bill/{purchaseId}/{email}")] // ตรวจสิทธิ์ด้วย email ผู้ซื้อ
+        BillView GetBillByPurchaseId(string purchaseId, string email);
 
 
 

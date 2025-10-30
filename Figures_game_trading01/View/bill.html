@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <title>Bill</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .bill {
+            max-width: 840px;
+            margin: 24px auto;
+        }
+
+        .bill-header {
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+        }
+
+        .bill-table th, .bill-table td {
+            vertical-align: top;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="home.html">Figure Shop</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#loggedInNavbar" aria-controls="loggedInNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="loggedInNavbar">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item" id="navAddProduct">
+                        <a class="nav-link" href="AddProduct.html">Add Product</a>
+                    </li>
+                    <li class="nav-item" id="navAddProduct">
+                        <a class="nav-link" href="Catalogs.html">Catalogs</a>
+                    </li>
+                    <li class="nav-item" id="navManageProduct">
+                        <a class="nav-link" href="Admin.html">Manage Product</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="history.html">Profile (ประวัติการซื้อ)</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="HomePage.html" id="logoutLink">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="bill">
+        <div class="d-flex justify-content-between align-items-center bill-header">
+            <h3 class="m-0">ใบเสร็จ / BILL</h3>
+            <button class="btn btn-primary no-print" onclick="window.print()">พิมพ์</button>
+        </div>
+
+        <div id="loading" class="alert alert-info">กำลังโหลด...</div>
+        <div id="error" class="alert alert-danger d-none"></div>
+
+        <div id="content" class="d-none">
+            <div class="row mb-3">
+                <div class="col">
+                    <strong>เลขที่อ้างอิง:</strong> <span id="bill-id"></span><br>
+                    <strong>วันที่ซื้อ:</strong> <span id="bill-date"></span>
+                </div>
+                <div class="col text-end">
+                    <strong>ผู้ขาย:</strong> <span id="seller"></span><br>
+                    <strong>ผู้ซื้อ:</strong> <span id="buyer"></span>
+                </div>
+            </div>
+
+            <table class="table bill-table">
+                <thead><tr><th>สินค้า</th><th class="text-end">ราคา</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="d-flex gap-3">
+                                <img id="item-img" alt="" style="width:120px;height:90px;object-fit:cover;border:1px solid #eee;">
+                                <div>
+                                    <div><strong id="item-name"></strong></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            ฿<span id="amount"></span>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th class="text-end">รวมทั้งสิ้น</th>
+                        <th class="text-end">฿<span id="total"></span></th>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="mt-3">
+                <strong>สถานะชำระเงิน:</strong> <span id="pay-status"></span><br>
+                <strong>ช่องทาง:</strong> <span id="pay-method"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const params = new URLSearchParams(location.search);
+            const pid = params.get('pid');
+            const email = localStorage.getItem('email'); // ต้องล็อกอินไว้เหมือนหน้าอื่น
+
+            const API = new URL('../Services/dbService.svc', location.href).href;
+
+            const el = id => document.getElementById(id);
+            const show = (id) => el(id).classList.remove('d-none');
+            const hide = (id) => el(id).classList.add('d-none');
+
+            if (!pid || !email) {
+                el('loading').classList.add('d-none');
+                el('error').textContent = 'ไม่พบ pid หรือยังไม่ล็อกอิน';
+                show('error');
+                return;
+            }
+
+            fetch(`${API}/history/bill/${encodeURIComponent(pid)}/${encodeURIComponent(email)}`)
+                .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                .then(data => {
+                    hide('loading');
+
+                    if (!data || !data.purchase_id) {
+                        el('error').textContent = 'ไม่พบข้อมูลบิล';
+                        show('error');
+                        return;
+                    }
+
+                    el('bill-id').textContent = data.purchase_id;
+                    el('bill-date').textContent = String(data.purchased_at).replace('T', ' ');
+                    el('seller').textContent = data.seller_name ?? '-';
+                    el('buyer').textContent = `${data.buyer_name ?? ''} (${data.buyer_email ?? ''})`;
+                    el('item-name').textContent = data.item_name ?? '';
+                    el('item-img').src = data.img || 'https://placehold.co/800x600?text=No+Image';
+
+                    const amt = Number(data.total_amount || data.payment_amount || 0);
+                    el('amount').textContent = amt.toLocaleString();
+                    el('total').textContent = amt.toLocaleString();
+
+                    el('pay-status').textContent = data.payment_status ?? '-';
+                    el('pay-method').textContent = data.payment_method ?? '-';
+
+                    show('content');
+                })
+                .catch(err => {
+                    hide('loading');
+                    el('error').textContent = 'โหลดข้อมูลบิลไม่สำเร็จ';
+                    show('error');
+                    console.error(err);
+                });
+        })();
+
+        // ====== ซ่อนเมนูตาม role + logout ======
+        document.addEventListener('DOMContentLoaded', () => {
+            const isAdmin = (localStorage.getItem('role') || '').toLowerCase() === 'admin';
+            ['navAddProduct', 'navManageProduct'].forEach(id => {
+                let el = document.getElementById(id);
+                if (!el) return;
+                const li = el.closest('li');
+                if (li) el = li;
+                el.classList.toggle('d-none', !isAdmin);
+            });
+        });
+    </script>
+</body>
+</html>

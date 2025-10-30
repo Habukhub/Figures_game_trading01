@@ -503,7 +503,8 @@ namespace Figures_game_trading01
                 seller_name = x.seller_name,
                 payment_status = x.lastPay?.status ?? "-",
                 payment_amount = x.lastPay?.amount ?? 0m,
-                payment_method = x.lastPay?.method
+                payment_method = x.lastPay?.method,
+                bill_url = $"bill.html?pid={x.purchase_id}"
             }).ToArray();
         }
 
@@ -529,6 +530,58 @@ namespace Figures_game_trading01
             };
         }
 
+        //Bill
+        public BillView GetBillByPurchaseId(string purchaseId, string email)
+        {
+            if (!int.TryParse(purchaseId, out var pid)) return null;
+            if (string.IsNullOrWhiteSpace(email)) return null;
+
+            var buyer = db.users.FirstOrDefault(u => u.email == email);
+            if (buyer == null) return null;
+
+            // join purchase + catalog + seller
+            var q =
+                from p in db.purchases
+                where p.purchase_id == pid
+                join c in db.catalogs on p.item_id equals c.item_id
+                join s in db.users on c.seller_id equals s.user_id
+                select new
+                {
+                    p,
+                    c,
+                    seller_name = s.username,
+                    buyer_id = p.buyer_id,
+                    lastPay = db.payments
+                        .Where(pay => pay.purchase_id == p.purchase_id)
+                        .OrderByDescending(pay => pay.paid_date.HasValue)
+                        .ThenByDescending(pay => pay.paid_date)
+                        .ThenByDescending(pay => pay.payment_id)
+                        .Select(pay => new { pay.status, pay.amount, pay.method })
+                        .FirstOrDefault()
+                };
+
+            var x = q.FirstOrDefault();
+            if (x == null) return null;
+
+            // อนุญาตเฉพาะเจ้าของบิล
+            if (x.buyer_id != buyer.user_id) return null;
+
+            return new BillView
+            {
+                purchase_id = x.p.purchase_id,
+                purchased_at = x.p.purchased_at.ToString("s"),
+                total_amount = x.p.total_amount,
+                item_id = x.c.item_id,
+                item_name = x.c.name,
+                img = FirstImgOrNull(x.c.Imgs),
+                seller_name = x.seller_name,
+                buyer_name = buyer.username,
+                buyer_email = buyer.email,
+                payment_status = x.lastPay?.status ?? "-",
+                payment_amount = x.lastPay?.amount ?? 0m,
+                payment_method = x.lastPay?.method
+            };
+        }
 
         //Admin
 
