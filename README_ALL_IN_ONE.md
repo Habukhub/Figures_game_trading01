@@ -1,36 +1,6 @@
-# All-in-One README — Figure Auction System
 
-**Generated:** 2025-10-29 09:28
-
-This single README bundles:
-- Per-file README for all 13 files
-- Global README (overview)
-- System Analysis & Design (scope, ERD, relational schema/3NF)
-- Database scripts (DDL) and DML samples/guidance
-- 10 complex SQL queries
-- Simple UI guide & How to run locally
-
-
-## Project Structure & Presence Check
-
-- **HomePage.html** ✅
-- **Login.html** ✅
-- **Register.html** ✅
-- **Catalogs.html** ✅
-- **Bidding.html** ✅
-- **History.html** ✅
-- **AddProduct.html** ✅
-- **EditProduct.html** ✅
-- **Admin.html** ✅
-- **dataContract.cs** ✅
-- **IdbService.cs** ✅
-- **dbService.svc** ✅
-- **dbService.svc.cs** ✅
-
-
-
-## File-by-File README (13)
-
+# README
+วิธีการใช้
 ### Frontend
 
 **1) HomePage.html**
