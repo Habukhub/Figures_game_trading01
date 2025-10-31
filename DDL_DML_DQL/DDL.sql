@@ -1,8 +1,9 @@
-﻿DROP TABLE  payment; 
-DROP TABLE  purchase; 
-DROP TABLE  bid; 
-DROP TABLE  catalog; 
-DROP TABLE  users;
+﻿/* ---------- DROP (หากมี) ---------- */
+DROP TABLE IF EXISTS dbo.payment;
+DROP TABLE IF EXISTS dbo.purchase;
+DROP TABLE IF EXISTS dbo.bid;
+DROP TABLE IF EXISTS dbo.catalog;
+DROP TABLE IF EXISTS dbo.users;
 
 /* ========== USERS ========== */
 CREATE TABLE users (
