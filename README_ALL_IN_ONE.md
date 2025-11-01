@@ -1,6 +1,21 @@
 
 # README
 วิธีการใช้
+1.คัดลอกlink url githup
+2.เปิด visual studio 2022 แล้วกดclone repository
+3.วางlink urlที่คัดลอกมาลงใน repository แล้วเลือที่เก็บไฟล์ตามที่ต้องการ
+4.เปิดไฟล์web.configในแถบSolution explorer
+5.เปิดmicrosoft sql management studio แล้วคักลอกserver nameเก็บไว้
+6.สร้างdatabase ใหม่ชื่อว่า Figures
+7.นำserver nameที่คัดลอกมาได้มาวางไว้ที่connectionString="Data Source=..."/...คือservernameที่คัดลอกมา
+8.ลบcodeส่วนFiguresConnectionString1และFiguresConnectionString2ออก
+9.คลิกขวาที่data connectionsแล้วทำการ add connection
+10.วางserver name ที่คัดลอกไว้แล้วกดtrust server certificate แล้วเลือกdatabase Figures
+11.สร้างqueryใหม่แล้วคัดลอกcodeจากไฟล์DDL,DMLและDQLมาวางไว้จามลำดับ(queryละ1code)
+12.ทำการexecutequeryทั้ง3อันตามลำดับ(DDL,DML,DQL)
+13.เปิดHomePAge.htmlจากไฟล์viewที่แถบSolution explorer
+14.ทำการrun iss Expressเพื่อเปิดโปรแกรม
+
 ### Frontend
 
 **1) HomePage.html**
