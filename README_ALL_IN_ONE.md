@@ -109,64 +109,8 @@
 - History: show purchases and payments.
 
 ### ER Diagram
-```mermaid
-erDiagram
+<img width="1516" height="1176" alt="databaseproject" src="https://github.com/user-attachments/assets/80477ad8-946d-4573-bc8e-c6fa92a38cfc" />
 
-    USERS ||--o{ CATALOGS : "creates (admin/seller)"
-    USERS ||--o{ BIDS : "places"
-    USERS ||--o{ PURCHASES : "wins/buys"
-
-    CATALOGS ||--o{ BIDS : "is bidded on"
-    CATALOGS ||--o{ PURCHASES : "is sold as"
-
-    PURCHASES ||--o{ PAYMENTS : "paid by"
-
-    USERS {
-        int user_id PK
-        string name
-        string email UNIQUE
-        string password_hash
-        string phone
-        string role
-        datetime created_at
-    }
-
-    CATALOGS {
-        int item_id PK
-        int seller_id FK -> USERS.user_id
-        string name
-        decimal start_price
-        string imgs
-        string status
-        datetime created_at
-        datetime ends_at
-    }
-
-    BIDS {
-        int bid_id PK
-        int item_id FK -> CATALOGS.item_id
-        int bidder_id FK -> USERS.user_id
-        decimal amount
-        datetime bid_time
-    }
-
-    PURCHASES {
-        int purchase_id PK
-        int item_id FK -> CATALOGS.item_id
-        int buyer_id FK -> USERS.user_id
-        decimal total_amount
-        datetime purchase_at
-    }
-
-    PAYMENTS {
-        int payment_id PK
-        int purchase_id FK -> PURCHASES.purchase_id
-        string method
-        decimal amount
-        string status
-        datetime paid_date
-    }
-```
 
 ### Relational Schema (3NF)
 - USERS(user_id PK, name, email UNIQUE, password_hash, phone, role CHECK('admin','user'), created_at)
